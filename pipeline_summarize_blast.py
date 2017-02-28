@@ -33,6 +33,14 @@ parser.add_argument(
 	hit aliginment length in percentage to be accepted a hit, recommended 95
 	""")
 parser.add_argument(
+	'-vs', metavar = 'VARIABLE_START', required = False, type = int, help = """
+	reference sequence variable region start
+	""")
+parser.add_argument(
+	'-ve', metavar = 'VARIABLE_END', required = False, type = int, help = """
+	reference sequence variable region end
+	""")
+parser.add_argument(
 	'-t', metavar = 'BLAST_TYPE[0-2]', required = True, type = int, help = """
 	defines which section of the BLAST to be used to summarize results.
 	0 - suitable for MaarjAM, only last portion of hit description is used,
@@ -56,14 +64,18 @@ console.log("Parsing BLAST\n")
 for f in args.b:
 	f = f.strip()
 	col = f.split("\t")
-	tmp = col[13].split("/")
-	mlen = min(int(tmp[0]), int(tmp[1]))
+	mlen = min(int(col[13]), int(col[14]))
 	alen = int(col[6])
 	i += 1
 	if i % 10000 == 0:
 		console.log("%d/%d hits found/parsed\r" % (total, i))
-	if int(col[4]) >= args.i and alen >= mlen * (args.l / 100.0):
-		sample = col[0].split("_")[0]
+	if float(col[4]) >= args.i and alen >= mlen * (args.l / 100.0):
+		if args.vs is not None and args.ve is not None and args.vs < args.ve:
+			if col[11] > col[12]:
+				col[11], col[12] = col[12], col[11]
+			if args.vs < int(col[11]) or args.ve > int(col[12]):
+				continue
+		sample = col[0].split("-")[0]
 		if args.t == 0:
 			hit = col[2].split(" ")[-1]
 		elif args.t == 1:
@@ -97,7 +109,7 @@ if args.f is not None:
 			sequences_total += 1
 			if sequences_total % 10000 == 0:
 				console.log("%d/%d nohits sequences found/parsed\r" % (i, sequences_total))
-			index = f[1:].split("|")[0]
+			index = f[1:].split("-")[0]
 			if index in samples:
 				samples[index] += 1
 			else:
@@ -133,13 +145,12 @@ for k in sorted_cols:
 	fh.write("%d\t" % (cnt))
 # only if fasta file is defined
 if sequences_total > 0:
-	fh.write("\nCleaned reads\t%d\t" % (sequences_total))
+	fh.write("\nCleaned reads\t\t%d\t" % (sequences_total))
 	for k in sorted_cols:
 		if k[0] in samples:
 			fh.write("%d\t" % (samples[k[0]]))
 		else:
 			fh.write("\t")
-	fh.write("\n")
 fh.write("\nTotal\t%d\t%d\t" % (len(cols), total))
 for k in sorted_cols:
 	fh.write("%d\t" % (k[1]))

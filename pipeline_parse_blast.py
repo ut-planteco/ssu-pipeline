@@ -19,6 +19,8 @@ parser = argparse.ArgumentParser(description = """
 	""")
 args = parser.parse_args()
 
+i = 0
+
 for line in sys.stdin:
 	tmp = line.strip().split("<")
 	if len(tmp) > 1:
@@ -29,6 +31,9 @@ for line in sys.stdin:
 		else:
 			value = None
 		if tag == "Iteration_query-def":
+			i += 1
+			if i % 100 == 0:
+				console.log("%d hits parsed\r" % (i))
 			qry = {}
 			qry['qry-id'] = value
 		if tag == "Iteration_query-len":
@@ -68,24 +73,23 @@ for line in sys.stdin:
 				value = "+/-"
 			qry['hit']['hsp']['frame'] = value
 
-		#print(tag, value)
-
 		if tag == "Hsp_midline":
 			# print our result
 			identity = float(qry['hit']['hsp']['identity']) / float(qry['hit']['hsp']['alen']) * 100
-			tmp = qry['qry-id'].split("|")
+			tmp = qry['qry-id'].split("-")
 			if len(tmp) > 1:
-				sample = tmp[1]
+				sample = tmp[0]
 			else:
-				sample = None
+				sample = "NA"
 			tmp = qry['hit']['def'].split(" ")
 			vtx = tmp[-1]
 			mlen = min(int(qry['qry-len']), int(qry['hit']['len']))
 			alen = float(qry['hit']['hsp']['alen']) / float(mlen) * 100
 			if alen > 100:
 				alen = 100
-			sys.stdout.write("\t".join([qry['qry-id'], sample, vtx, qry['hit']['id'], qry['hit']['def'], qry['hit']['hsp']['evalue'], 
-				"{0:.2f}".format(identity), "{0:.2f}".format(alen), qry['hit']['hsp']['identity'], 
+			sys.stdout.write("\t".join([qry['qry-id'], qry['hit']['id'], qry['hit']['def'], qry['hit']['hsp']['evalue'], 
+				"{0:.2f}".format(identity), qry['hit']['hsp']['identity'], 
 				qry['hit']['hsp']['alen'], qry['hit']['hsp']['nr'], qry['hit']['hsp']['frame'],
 				qry['hit']['hsp']['qfrom'], qry['hit']['hsp']['qto'], qry['hit']['hsp']['rfrom'],
-				qry['hit']['hsp']['rto'], qry['qry-len'], qry['hit']['len'], qry['hit']['hsp']['score'],"\n"]))
+				qry['hit']['hsp']['rto'], qry['qry-len'], qry['hit']['len'], qry['hit']['hsp']['score'], "{0:.2f}".format(alen), "\n"]))
+console.log("%d hits parsed\n" % (i))

@@ -86,17 +86,14 @@ def parseSequence(quality, args, lookup, sequence, f):
 				sequence = sequence[:trim_len]
 		avg_quality = calculateAverageQuality(quality)
 	for k in lookup:
-		_length = str(len(sequence))
+		_length = len(sequence)
 		if sequence.startswith(k) and avg_quality >= args.q \
 				and len(sequence) >= args.ml + len(k):
 			sequence = sequence[len(k):]
 			_tmp = lookup[k]
 			if args.tl is not None:
 				sequence[0:args.tl]
-			f.write(header + "_" + _tmp[0] + "\t")
-			f.write(_tmp[0] + "\t" + _tmp[1] + "\t" + _tmp[2] + "\t")
-			f.write(str(avg_quality) + "\t" + _length + "\t" + str(len(sequence)) + "\t\n")
-			f.write(sequence + "\n")
+			f.write(">%s-%s\t%s\t%s\t%s\t%.2f\t%d\t%d\n%s\n" % (_tmp[0], header[1:], _tmp[0], _tmp[1], _tmp[2], avg_quality, _length, len(sequence), sequence))
 			return True
 	return False
 """
@@ -153,6 +150,5 @@ for r1 in args.f:
 if parseSequence(quality, args, lookup, sequence, f):
 	seq_c += 1
 console.log("%d/%d sequences cleaned/parsed\n" % (seq_c, seq_i))
-console.log("End of script\n")
 if f is not None:
 	f.close()

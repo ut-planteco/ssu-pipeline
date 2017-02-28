@@ -4,6 +4,7 @@ from __future__ import division
 import os
 import argparse
 import console
+import sys
 
 """
 	Prepare arguments to be parsed for reverse complemeting sequences with 
@@ -36,7 +37,7 @@ def reverse_complement(seq):
 lookup = {}
 for r in args.b:
 	col = r.strip().split("\t")
-	if col[7] is "+/-":
+	if col[8] is "+/-":
 		lookup[col[0]] = True
 """
 	Read FASTA file and reverse complement sequences with wrong strand

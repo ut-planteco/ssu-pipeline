@@ -35,7 +35,7 @@ tar -xzvf example_data.tar.gz
 Inside `maarjam` folder is located Maarj_AM_ database (status October 2016) with FASTA and BLAST+ formatted file formats that can be directly used to identify sequences. Use BLAST+ formatted files as it will allow to use multiple cores compared to only using FASTA file. You can format FASTA file into BLAST+ format as following
 
 ```
-makeblastdb 
+makeblastdb -in reference.fasta -dbtype nucl -title CustomDB -out reference
 ```
 
 ## 1.1. Clean raw 454 sequences
@@ -53,7 +53,7 @@ Sample | Barcode | Primer
 JS1RS5 | AGTGAGTG | TTGGAGGGCAAGTCTGGTGCC
 JS2CM2 | AGTGTCTG | TTGGAGGGCAAGTCTGGTGCC
 
-Run python from command line as following:
+We need to define for the script our fasta and quality file locations, sample list and how the tab delimited sample list file is formated: in which column sample, barcode and primer are listed. We define average quality `-q` to be at least 25 (0 to 40), minimum length `-ml` after barcode and primer removal should be at least 170nt and longer `-tl` than 520nt sequences are trimmed to shorter to remove reverse primer AML2. SSU amplicon length between primers is approximately 520nt. Run python from command line as following:
 ```
 python pipeline_clean_454.py -f 454/example.fasta -qf 454/example.qual -b 454/example.barcode -bs 1 -bb 2 -bp 3 -q 25 -ml 170 -tl 520
 ```
@@ -78,7 +78,7 @@ arguments:
   -bb BARCODE_COLUMN   barcode column in BARCODE file
   -bp PRIMER_COLUMN    primer column in BARCODE file
   -q AVERAGE_QUALITY   lower limit of average quality of the sequence to be
-                       filtered out (25)
+                       filtered out (recommended = 25)
   -trimq TRIM_QUALITY  lower limit of average quality that is trimmed away
                        when it drops below the threshold (recommended = 20)
   -trimw TRIM_WINDOW   window size to calculate average quality for trimming
@@ -89,14 +89,20 @@ arguments:
                        remove reverse primer
 ```
 
+Output is written into file `454/example.cleaned.fasta`, move it into main folder for simplicity.
+
+```
+mv 454/example.cleaned.fasta 454.cleaned.fasta
+```
+
 ## 1.2. Clean raw Illumina sequences
 
-Clean Illumina sequences by defining the folder where paired reads are located and provide forward and reverse for both primers with average quality. Make sure that demultiplexed file names coming from Illumina MiSeq platform are correct. Script will gather files named as `SAMPLE_R1_001.fastq` or `SAMPLE_R1_001.fastq.tar.gz`. Script will interleave correct forward and reverse reads together that can be easily used by FLASh software to pair them. Because FLASh output FASTQ, we need to convert it to FASTA to make it understandable for BLAST. We also define Illumina Nextera adapters first 10 nucleotides to remove sequences containing part of the adapter. In order to skip intermediate files, pipe each step into one command as following:
+Clean Illumina sequences by defining the folder `-folder` where paired reads are located and provide forward and reverse for both primers with average quality. Make sure that demultiplexed file names coming from Illumina MiSeq platform are correct. Script will gather files named as `SAMPLE_R1_001.fastq` or `SAMPLE_R1_001.fastq.tar.gz`. Script will interleave correct forward and reverse reads together that can be easily used by FLASh software to pair them. Because FLASh output FASTQ, we need to convert it to FASTA to make it understandable for BLAST. We also define Illumina Nextera adapters first 10 nucleotides to remove sequences containing part of the adapter for forward `-fadapter` and reverse `-radapter` reads. As the example data is using tagmentation based Illumina, we do not need to define forward `-fprimer` and reverse `-rprimer` primers. Finally we define that average quality `-quality` for both reads needs to be at least 30 (0-40). In order to skip intermediate files, pipe each step into one command as following:
 ```
-python pipeline_clean_illumina.py -folder illumina/ -fprimer TTGGAGGGCAAGTCTGGTGCC -rprimer GAACCCAAACACTTTGGTTTCC -fadapter CTGTCTCTTA -radapter CTGTCTCTTA | flash | python pipeline_fastq_fasta.py -l 400 > cleaned.fasta
+python pipeline_clean_illumina.py -folder illumina/ -fprimer "" -rprimer "" -fadapter CTGTCTCTTA -radapter CTGTCTCTTA -quality 30 | ~/applications/FLASH/flash -m 10 -M 300 --interleaved-input - -c | python pipeline_fastq_fasta.py > illumina.cleaned.fasta
 ```
 
-Nextera adapters R1 GTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG and R2 TGTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG needs to be reverse complement. We only need to match first ten bases to find adapters. These 10 bases have been checked against Maarj_AM_ database and no interference with shortened adapter sequence is found to catch false positives. 
+Nextera adapters R1 GTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG and R2 TGTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG needs to be reverse complement. We only need to match first ten bases to find adapters. These 10 bases have been checked against Maarj_AM_ database and no interference using short adapter sequence is found to catch false positives. 
 
 Command help
 
@@ -122,21 +128,22 @@ arguments:
 Tagmentation based Illumina produces sequences that are not in the same direction, but USEARCH software needs to have all the reads in same direction as the reference database, we need to change them into correct strand. All the sequences should start from NS31 primer and end with AML2 primer. To achieve this, we use Maarj_AM_ database with our cleaned sequences and run BLAST+ software to identify strand of the sequences. Sequences identified as +/- by the BLAST+ needs to be reverse complemented. 
 
 ```
-blastn -query cleaned.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db maarjam/maarjam -outfmt 5 | python pipeline_parse_blast.py > cleaned.strand.blast
+blastn -query illumina.cleaned.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db maarjam/maarjam -outfmt 5 | python pipeline_parse_blast.py > illumina.strand.blast
 ```
 
 Now run python script that reads BLAST results and fasta input to change direction of the sequences
 
 ```
-python pipeline_correct_direction.py -f cleaned.fasta -b cleaned.strand.blast > cleaned.correct.fasta
+python pipeline_correct_direction.py -f illumina.cleaned.fasta -b illumina.strand.blast > illumina.correct.fasta
 ```
 
 ## 2. Remove chimeric sequences
 
-Once files are cleaned, we need to remove chimeric sequences that are introduced using PCR. We use USEARCH in reference database mode against Maarj_AM_ database. 
+Once files are cleaned, we need to remove chimeric sequences that are introduced using PCR. We use USEARCH in reference database mode against Maarj_AM_ database. Make sure to use correct input file for 454 and Illumina, `454.cleaned.fasta` and `illumina.correct.fasta` respectivelly.
 
 ```
-usearch -uchime_ref cleaned.fasta -db maarjam/maarjam.fasta -nonchimeras cleaned.cf.fasta -strand plus
+usearch -uchime_ref 454.cleaned.fasta -db maarjam/maarjam.fasta -nonchimeras 454.cf.fasta -strand plus
+usearch -uchime_ref illumina.correct.fasta -db maarjam/maarjam.fasta -nonchimeras illumina.cf.fasta -strand plus
 ```
 
 ## 3. Identify reads against reference database
@@ -144,15 +151,17 @@ usearch -uchime_ref cleaned.fasta -db maarjam/maarjam.fasta -nonchimeras cleaned
 Once we have removed chimeric reads, we can start identifying sequences using BLAST+ software and Maarj_AM_ database. 
 
 ```
-blastn -query cleaned.cf.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db maarjam/maarjam -outfmt 5 | python pipeline_parse_blast.py > cleaned.cf.blast
+blastn -query 454.cf.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db maarjam/maarjam -outfmt 5 | python pipeline_parse_blast.py > 454.cf.blast
+blastn -query illumina.cf.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db maarjam/maarjam -outfmt 5 | python pipeline_parse_blast.py > illumina.cf.blast
 ```
 
 ## 4. Summarize BLAST results
 
-Finally, we can summarize BLAST result using parsed output. Providing FASTA file will output also nohit selection that can be used for further BLAST against additional databases.
+Finally, we can summarize BLAST result using parsed output. Providing FASTA file will output also nohit selection that can be used for further BLAST against additional databases. We use parameters `-vs` and `-ve` do define reference database variable region location. Because we use Maarj_AM_ database in this example, all the referene sequences start after NS31 primer and variable region on the amplicon is located from 70nt to 300nt after the NS31 primer. We also define hit identity `-i` to be at least 97% and alignment length `-l` for the hit at least 95% to be counted as a hit.
 
 ```
-python pipeline_summarize_blast.py -f cleaned.cf.fasta -b cleaned.cf.blast -i 97 -l 95 -t 0
+python pipeline_summarize_blast.py -f 454.cf.fasta -b 454.cf.blast -i 97 -l 95 -t 0 -vs 70 -ve 300
+python pipeline_summarize_blast.py -f illumina.cf.fasta -b illumina.cf.blast -i 97 -l 95 -t 0 -vs 70 -ve 300
 ```
 
 Command help
@@ -160,7 +169,8 @@ Command help
 ```
 python pipeline_summarize_blast.py
     -b BLAST_FILE [-f FASTA_FILE] -i
-    IDENTITY[0-100] -l ALIGNMENT[0-100] -t
+    IDENTITY[0-100] -l ALIGNMENT[0-100]
+    [-vs VARIABLE_START] [-ve VARIABLE_END] -t
     BLAST_TYPE[0-2]
 arguments:
   -b BLAST_FILE        BLAST tabulated output that was generated with
@@ -171,6 +181,8 @@ arguments:
                        recommended 97
   -l ALIGNMENT[0-100]  hit aliginment length in percentage to be accepted a
                        hit, recommended 95
+  -vs VARIABLE_START   reference sequence variable region start
+  -ve VARIABLE_END     reference sequence variable region end
   -t BLAST_TYPE[0-2]   defines which section of the BLAST to be used to
                        summarize results. 0 - suitable for MaarjAM, only last
                        portion of hit description is used, 1 - all hit

@@ -67,7 +67,15 @@ if args.folder[-1:] != "/":
 seq_i = 0
 seq_sel = 0
 
+if args.fprimer is None:
+	args.fprimer = ""
+if args.rprimer is None:
+	args.rprimer = ""
+
+j = 0
+
 for f in files:
+	sample = f.split("_")[0]
 	f = args.folder + f
 	console.log("Parsing file %s\n" % (f))
 	r = f.replace("_R1_", "_R2_")
@@ -95,6 +103,7 @@ for f in files:
 		with fh1 as r1, fh2 as r2:
 			for l1, l2 in zip(r1, r2):
 				i += 1
+				j += 1
 				c1.append(l1.strip())
 				c2.append(l2.strip())
 				if i % 4 == 0:
@@ -107,6 +116,8 @@ for f in files:
 						if args.radapter is not None and args.radapter in c2[1]:
 							continue
 						seq_sel += 1
+						c1[0] = "@%s-%d" % (sample, j)
+						c2[0] = "@%s-%d" % (sample, j)
 						sys.stdout.write("%s\n%s\n" % ("\n".join(c1), "\n".join(c2)))
 					c1 = []
 					c2 = []
