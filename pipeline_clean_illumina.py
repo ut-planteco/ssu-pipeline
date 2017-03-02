@@ -111,14 +111,16 @@ for f in files:
 					if(seq_i % 1000 == 0):
 						console.log("%d/%d sequences selected/parsed\r" % (seq_sel, seq_i))
 					if startsWith(c1[1], args.fprimer) and startsWith(c2[1], args.rprimer) and avgQuality(c1[3], args.phred) >= args.quality and avgQuality(c2[3], args.phred) >= args.quality:
+						skip = False
 						if args.fadapter is not None and args.fadapter in c1[1]:
-							continue
-						if args.radapter is not None and args.radapter in c2[1]:
-							continue
-						seq_sel += 1
-						c1[0] = "@%s-%d" % (sample, j)
-						c2[0] = "@%s-%d" % (sample, j)
-						sys.stdout.write("%s\n%s\n" % ("\n".join(c1), "\n".join(c2)))
+							skip = True
+						if args.radapteris not None and args.radapter in c2[1]:
+							skip = True
+						if skip == False:
+							seq_sel += 1
+							c1[0] = "@%s-%d" % (sample, j)
+							c2[0] = "@%s-%d" % (sample, j)
+							sys.stdout.write("%s\n%s\n" % ("\n".join(c1), "\n".join(c2)))
 					c1 = []
 					c2 = []
 
