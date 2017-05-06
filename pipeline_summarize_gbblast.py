@@ -11,53 +11,98 @@ import operator
 	Prepare arguments to be parsed for summarizing BLAST
 """
 parser = argparse.ArgumentParser(description = """ 
-	Summarizing BLAST results with user define identity and alignment length
-	thresholds. Providing FASTA file will result nohit file that can be used 
-	to run additional BLAST with another database.
+	Summarizing INSDC BLAST results with user define identity and alignment length
+	thresholds. 
 	""")
 parser.add_argument(
 	'-b', metavar = 'BLAST_FILE', required = True, type = open, help = """
 	BLAST tabulated output that was generated with pipeline_parseblast.py
 	""")
 parser.add_argument(
-	'-f', metavar = 'FASTA_FILE', type = open, help = """
-	FASTA file to be used to output list of bad hits that did not match
-	thresholds
+	'-ti', metavar = 'ID_FILE', required = True, type = open, help = """
+	Taxonomy file, where for each GenBank ID node ID is specified
+	""")
+parser.add_argument(
+	'-tt', metavar = 'TAXONOMY_FILE', required = True, type = open, help = """
+	Taxonomy file, where for each node ID scientific name is provided
+	""")
+parser.add_argument(
+	'-tn', metavar = 'NODE_FILE', required = True, type = open, help = """
+	Taxonomy file, where full tree node connections of node IDs are provided to 
+	build full taxonomy tree 
 	""")
 parser.add_argument(
 	'-i', metavar = 'IDENTITY[0-100]', required = True, type = int, help = """
-	hit identity in percentage to be accepted as a hit, recommended 97
+	hit identity in percentage to be accepted as a hit, recommended 90
 	""")
 parser.add_argument(
 	'-l', metavar = 'ALIGNMENT[0-100]', required = True, type = int, help = """
-	hit aliginment length in percentage to be accepted a hit, recommended 95
-	""")
-parser.add_argument(
-	'-vs', metavar = 'VARIABLE_START', required = False, type = int, help = """
-	reference sequence variable region start
-	""")
-parser.add_argument(
-	'-ve', metavar = 'VARIABLE_END', required = False, type = int, help = """
-	reference sequence variable region end
-	""")
-parser.add_argument(
-	'-t', metavar = 'BLAST_TYPE[0-2]', required = True, type = int, help = """
-	defines which section of the BLAST to be used to summarize results.
-	0 - suitable for MaarjAM, only last portion of hit description is used,
-	1 - all hit description is used,
-	2 - hit identificator is used
+	hit aliginment length in percentage to be accepted a hit, recommended 90
 	""")
 args = parser.parse_args()
 
-nohits = []
 rows = {}
 cols = {}
 hits = {}
+ids = {}
+nodes = {}
+names = {}
+taxonomy_tree = {}
+
 total = 0
 # for fasta sequences
 sequences = {}
 samples = {}
 sequences_total = 0
+
+def buildTree(tax_id):
+	global taxonomy_tree
+	if tax_id in taxonomy_tree:
+		return taxonomy_tree[tax_id]
+	elif tax_id in ids:
+		convert_id = ids[tax_id]
+		l = []
+		while convert_id != 1:
+			if convert_id in nodes:
+				if convert_id in names:
+					l.append(names[convert_id])
+				else:
+					l.append("root")
+				convert_id = nodes[convert_id]
+			else:
+				convert_id = 1
+		tmp = "; ".join(l[::-1])
+		taxonomy_tree[tax_id] = tmp
+		return tmp
+	else:
+		taxonomy_tree[tax_id] = tax_id
+		return taxonomy_tree[tax_id]
+
+console.log("Fetching list of GenBank IDs from BLAST\n")
+for f in args.b:
+	f = f.strip()
+	col = f.split("\t")
+	ids[col[1]] = True
+
+console.log("Fetching conversion of GenBank IDs to nodes\n")
+for f in args.ti:
+	f = f.strip()
+	col = f.split("\t")
+	if col[0] in ids:
+		ids[col[0]] = col[1]
+
+console.log("Building taxonomy tree lookup\n")
+for f in args.tn:
+	f = f.strip()
+	col = f.split("\t|\t")
+	nodes[col[0]] = col[1]
+
+console.log("Building taxonomy name lookup\n")
+for f in args.tt:
+	f = f.replace("\t|\n", "\n").strip()
+	col = f.split("\t|\t")
+	if col[3] == "scientific name":
+		names[col[0]] = col[1]
 
 i = 0
 console.log("Parsing BLAST\n")
@@ -76,12 +121,7 @@ for f in args.b:
 			if args.vs < int(col[11]) or args.ve > int(col[12]):
 				continue
 		sample = col[0].split("-")[0]
-		if args.t == 0:
-			hit = col[2].split(" ")[-1]
-		elif args.t == 1:
-			hit = col[2].split("| ")[-1]
-		else:
-			hit = col[1]
+		hit = buildTree(col[1])
 		if hit in rows:
 			rows[hit] += 1
 		else:
@@ -100,30 +140,6 @@ for f in args.b:
 	
 console.log("%d/%d hits found/parsed\n" % (total, i))	
 i = 0
-if args.f is not None:
-	console.log("Writing out nohits\n")
-	fh = open("%s.i%d.a%d.nohits.fasta" % (args.b.name, args.i, args.l), "w+")
-	write = False
-	for f in args.f:
-		if len(f) > 0 and f[0] == ">":
-			sequences_total += 1
-			if sequences_total % 10000 == 0:
-				console.log("%d/%d nohits sequences found/parsed\r" % (i, sequences_total))
-			index = f[1:].split("-")[0]
-			if index in samples:
-				samples[index] += 1
-			else:
-				samples[index] = 1
-			if f[1:] not in sequences:
-				i += 1
-				write = True
-			else:
-				write = False
-		if write:
-			fh.write(f)
-	if fh is not None:
-		fh.close()
-	console.log("%d/%d nohits sequences found/parsed\n" % (i, sequences_total))	
 
 sorted_rows = sorted(rows.items(), key=operator.itemgetter(1), reverse=True)
 sorted_cols = sorted(cols.items(), key=operator.itemgetter(1), reverse=True)

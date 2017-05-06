@@ -193,11 +193,69 @@ arguments:
 
 Two files are generated from previous step. One is named as `*.nohits.fasta`, where sequences that did not get significant hit against reference database are written out and `*.tsv`, where results in pivot table form are written and hits are sorted in descending order.
 
+## 6. BLAST against INSDC (Optional)
+
+To identify nohits we can use INSDC database to understand what else the sequences are containing. We first need to download database from NCBI FTP server and conduct BLAST on the downloaded database. BLAST can be run with all the INSDC data partitions together (large memory usage) or if memory usage is limited, by separately.
+
+## 6.1. Download INSDC database from NCBI FTP server. Please check number of NT sequences in FTP to download them all, change `41` from below line accordingly. As the database contains only GenBank accessions, GenBank ID and short description, we need to download taxonomy information (`gi_taxid_nucl.dmp.gz`, `taxdump.tar.gz`) to build taxonomy tree for each hit. 
+```
+for i in {00..41}; do echo "Downloading NT.$i"; wget ftp://ftp.ncbi.nlm.nih.gov/blast/db/nt.$i.tar.gz; tar xzvf nt.$i.tar.gz; done
+wget ftp://ftp.ncbi.nih.gov/pub/taxonomy/gi_taxid_nucl.dmp.gz
+wget ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz
+gunzip gi_taxid_nucl.dmp.gz
+gunzip taxdump.tar.gz
+
+```
+
+## 6.2 Run BLAST against INSDC
+
+To run BLAST with all the INSDC data partitions together, we can simply define database parameter in BLAST as `nt` or if we want to run them separately, we need to define all the partions one by one or use for loop.
+
+```
+blastn -query *.nohits.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db nt -outfmt 5 | python pipeline_parse_blast.py > nohits.blast
+```
+
+or run separately (change number 41 accordinly to downloaded partitions)
+
+```
+for i in {00..41}; do blastn -query *.nohits.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db nt.$i -outfmt 5 | python pipeline_parse_blast.py > nohits.$i.blast; done
+```
+
+## 6.3 Summarize BLAST results
+
+We use relaxed parameters to filter potential hits by reducing identity threshold to be at least 90% and length at least 90%. We also need to define files, where taxonomy information is stored for `nt` database. Warning: as the `*.dmp` files are relatively large and below script is not optimized, it can use large ammount of memory.
+
+```
+python pipeline_summarize_gbblast.py -b nohits.blast -i 90 -l 90 -ti gi_taxid_nucl.dmp -tt names.dmp -tn nodes.dmp
+```
+
+Command help
+
+```
+python pipeline_summarize_gbblast.py [-h] -b BLAST_FILE -ti ID_FILE -tt
+                                     TAXONOMY_FILE -tn NODE_FILE -i
+                                     IDENTITY[0-100] -l ALIGNMENT[0-100]
+arguments:
+  -h, --help           show this help message and exit
+  -b BLAST_FILE        BLAST tabulated output that was generated with
+                       pipeline_parseblast.py
+  -ti ID_FILE          Taxonomy file, where for each GenBank ID node ID is
+                       specified
+  -tt TAXONOMY_FILE    Taxonomy file, where for each node ID scientific name
+                       is provided
+  -tn NODE_FILE        Taxonomy file, where full tree node connections of node
+                       IDs are provided to build full taxonomy tree
+  -i IDENTITY[0-100]   hit identity in percentage to be accepted as a hit,
+                       recommended 90
+  -l ALIGNMENT[0-100]  hit aliginment length in percentage to be accepted a
+                       hit, recommended 90
+```
+
 ___
 
 Use following citation when using our python scripts:
 ```
-Vasar M, Davison J, Jairus T, Kivistik PA, Metspalu A, Milani M, Moora M, Remm M, Zobel M, Öpik M (201X) Comparison of 454 and Illumina sequencing methods to study arbuscular mycorrhizal fungal community diversity, XXXX x: xxx-xxx
+Vasar M, Andreson R, Davison J, Jairus T, Moora M, Remm M, Young JPW, Zobel M, Öpik M (XXXX) Increased sequencing depth does not increase captured diversity of arbuscular mycorrhizal fungi.
 ```
 
 License: [CC-BY](https://creativecommons.org/licenses/by/3.0/)
