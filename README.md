@@ -191,13 +191,15 @@ arguments:
 
 ## 5. Final results
 
-Two files are generated from previous step. One is named as `*.nohits.fasta`, where sequences that did not get significant hit against reference database are written out and `*.tsv`, where results in pivot table form are written and hits are sorted in descending order.
+Two files are generated from previous step. One is named as `*.nohits.fasta`, where sequences that did not get significant hit against reference database are written out and `*.tsv`, where results are written as pivot table with samples and hits sorted in descending order.
 
 ## 6. BLAST against INSDC (Optional)
 
 To identify nohits we can use INSDC database to understand what else the sequences are containing. We first need to download database from NCBI FTP server and conduct BLAST on the downloaded database. BLAST can be run with all the INSDC data partitions together (large memory usage) or if memory usage is limited, by separately.
 
-## 6.1. Download INSDC database from NCBI FTP server. Please check number of NT sequences in FTP to download them all, change `41` from below line accordingly. As the database contains only GenBank accessions, GenBank ID and short description, we need to download taxonomy information (`gi_taxid_nucl.dmp.gz`, `taxdump.tar.gz`) to build taxonomy tree for each hit. 
+## 6.1. Download INSDC database from NCBI FTP server. 
+
+Please check number of NT sequences in FTP to download them all, change `41` from below line accordingly. As the database contains only GenBank accessions, GenBank ID and short description, we need to download taxonomy information (`gi_taxid_nucl.dmp.gz`, `taxdump.tar.gz`) to build taxonomy tree for each hit. 
 ```
 for i in {00..41}; do echo "Downloading NT.$i"; wget ftp://ftp.ncbi.nlm.nih.gov/blast/db/nt.$i.tar.gz; tar xzvf nt.$i.tar.gz; done
 wget ftp://ftp.ncbi.nih.gov/pub/taxonomy/gi_taxid_nucl.dmp.gz
