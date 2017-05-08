@@ -106,37 +106,33 @@ for f in args.tt:
 
 i = 0
 console.log("Parsing BLAST\n")
-for f in args.b:
-	f = f.strip()
-	col = f.split("\t")
-	mlen = min(int(col[13]), int(col[14]))
-	alen = int(col[6])
-	i += 1
-	if i % 10000 == 0:
-		console.log("%d/%d hits found/parsed\r" % (total, i))
-	if float(col[4]) >= args.i and alen >= mlen * (args.l / 100.0):
-		if args.vs is not None and args.ve is not None and args.vs < args.ve:
-			if col[11] > col[12]:
-				col[11], col[12] = col[12], col[11]
-			if args.vs < int(col[11]) or args.ve > int(col[12]):
-				continue
-		sample = col[0].split("-")[0]
-		hit = buildTree(col[1])
-		if hit in rows:
-			rows[hit] += 1
-		else:
-			rows[hit] = 1
-		if sample in cols:
-			cols[sample] += 1
-		else:
-			cols[sample] = 1
-		index = "_".join([hit, sample])
-		if index in hits:
-			hits[index] += 1
-		else:
-			hits[index] = 1
-		total += 1
-		sequences[col[0]] = True
+with open(args.b.name) as infile:
+	for f in infile:
+		f = f.strip()
+		col = f.split("\t")
+		mlen = min(int(col[13]), int(col[14]))
+		alen = int(col[6])
+		i += 1
+		if i % 10000 == 0:
+			console.log("%d/%d hits found/parsed\r" % (total, i))
+		if float(col[4]) >= args.i and alen >= mlen * (args.l / 100.0):
+			sample = col[0].split("-")[0]
+			hit = buildTree(col[1])
+			if hit in rows:
+				rows[hit] += 1
+			else:
+				rows[hit] = 1
+			if sample in cols:
+				cols[sample] += 1
+			else:
+				cols[sample] = 1
+			index = "_".join([hit, sample])
+			if index in hits:
+				hits[index] += 1
+			else:
+				hits[index] = 1
+			total += 1
+			sequences[col[0]] = True
 	
 console.log("%d/%d hits found/parsed\n" % (total, i))	
 i = 0

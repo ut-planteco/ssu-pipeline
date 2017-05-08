@@ -225,7 +225,7 @@ for i in {00..41}; do blastn -query *.nohits.fasta -evalue 1e-50 -max_target_seq
 
 ## 6.3 Summarize BLAST results
 
-We use relaxed parameters to filter potential hits by reducing identity threshold to be at least 90% and length at least 90%. We also need to define files, where taxonomy information is stored for `nt` database. Warning: as the `*.dmp` files are relatively large and below script is not optimized, it can use large ammount of memory.
+We use relaxed parameters to filter potential hits by reducing identity threshold to be at least 90% and length at least 90%. We also need to define files, where taxonomy information is stored for `nt` database. Warning: as the `*.dmp` files are relatively large and below script is not optimized, it can use large ammount of memory and will take time to process file `gi_taxid_nucl.dmp`.
 
 ```
 python pipeline_summarize_gbblast.py -b nohits.blast -i 90 -l 90 -ti gi_taxid_nucl.dmp -tt names.dmp -tn nodes.dmp

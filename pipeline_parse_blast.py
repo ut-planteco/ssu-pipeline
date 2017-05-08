@@ -41,7 +41,12 @@ for line in sys.stdin:
 		if tag == "Hit_num":
 			qry['hit'] = {}
 			qry['hit']['nr'] = value
-		if tag == "Hit_accession":
+		if tag == "Hit_id":
+			if value[:2] == "gi":
+				qry['hit']['id'] = value.split("|")[1]
+			else:
+				qry['hit']['id'] = ""
+		if tag == "Hit_accession" and qry['hit']['id'] == "":
 			qry['hit']['id'] = value
 		if tag == "Hit_def":
 			qry['hit']['def'] = value
