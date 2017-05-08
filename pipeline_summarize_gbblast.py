@@ -62,16 +62,20 @@ def buildTree(tax_id):
 	elif tax_id in ids:
 		convert_id = ids[tax_id]
 		l = []
-		while convert_id != 1:
+		while convert_id != "1":
 			if convert_id in nodes:
 				if convert_id in names:
 					l.append(names[convert_id])
 				else:
 					l.append("root")
 				convert_id = nodes[convert_id]
+				if convert_id == "1":
+					l.append("root")
 			else:
-				convert_id = 1
+				convert_id = "1"
 		tmp = "; ".join(l[::-1])
+		if len(tmp) == 0:
+			tmp = tax_id
 		taxonomy_tree[tax_id] = tmp
 		return tmp
 	else:
