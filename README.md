@@ -217,10 +217,11 @@ To run BLAST with all the INSDC data partitions together, we can simply define d
 blastn -query *.nohits.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db nt -outfmt 5 | python pipeline_parse_blast.py > nohits.blast
 ```
 
-or run separately (change number 41 accordinly to downloaded partitions)
+or run separately and combine BLAST results together by selecting best hut for each sequence based on BLAST score (change number 41 accordinly to downloaded partitions)
 
 ```
 for i in {00..41}; do blastn -query *.nohits.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db nt.$i -outfmt 5 | python pipeline_parse_blast.py > nohits.$i.blast; done
+less nohits.*.blast | python pipeline_merge_blasts.py > nohits.blast
 ```
 
 ## 6.3 Summarize BLAST results
