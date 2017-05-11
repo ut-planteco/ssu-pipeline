@@ -1,6 +1,6 @@
 # ssu-pipeline
 
-Series of scripts to analyse 454 and Illumina sequences in SSU amplicon against [Maarj_AM_](http://maarjam.botany.ut.ee) database. This is pipeline that has been developed and used in paper *"Comparison of 454 and Illumina sequencing methods to study arbuscular mycorrhizal fungal community diversity"* (Vasar et al. xxxx). Both 454 and Illumina pipelines are optimized on analyzing SSU sequences against MaarjAM database using BLAST based OTU picking approach. For 454, we assume that sequences are multiplexed into one file and for Illumina sequences are demultiplexed into separate fastq or fastq.tar.gz (packed) pairs for each sample as it is general approach. 
+Series of scripts to analyse 454 and Illumina sequences in SSU amplicon against [Maarj*AM*](http://maarjam.botany.ut.ee) database. This is pipeline that has been developed and used in paper *"Comparison of 454 and Illumina sequencing methods to study arbuscular mycorrhizal fungal community diversity"* (Vasar et al. xxxx). Both 454 and Illumina pipelines are optimized on analyzing SSU sequences against MaarjAM database using BLAST based OTU picking approach. For 454, we assume that sequences are multiplexed into one file and for Illumina sequences are demultiplexed into separate fastq or fastq.tar.gz (packed) pairs for each sample as it is general approach. 
 
 ## Prerequisite software
 
@@ -32,7 +32,7 @@ Example datasets for 454 and Illumina are located in `example_data.tar.gz` and u
 tar -xzvf example_data.tar.gz
 ```
 
-Inside `maarjam` folder is located Maarj_AM_ database (status October 2016) with FASTA and BLAST+ formatted file formats that can be directly used to identify sequences. Use BLAST+ formatted files as it will allow to use multiple cores compared to only using FASTA file. You can format FASTA file into BLAST+ format as following
+Inside `maarjam` folder is located Maarj*AM* database (status October 2016) with FASTA and BLAST+ formatted file formats that can be directly used to identify sequences. Use BLAST+ formatted files as it will allow to use multiple cores compared to only using FASTA file. You can format FASTA file into BLAST+ format as following
 
 ```
 makeblastdb -in reference.fasta -dbtype nucl -title CustomDB -out reference
@@ -102,7 +102,7 @@ Clean Illumina sequences by defining the folder `-folder` where paired reads are
 python pipeline_clean_illumina.py -folder illumina/ -fprimer "" -rprimer "" -fadapter CTGTCTCTTA -radapter CTGTCTCTTA -quality 30 | ~/applications/FLASH/flash -m 10 -M 300 --interleaved-input - -c | python pipeline_fastq_fasta.py > illumina.cleaned.fasta
 ```
 
-Nextera adapters R1 GTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG and R2 TGTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG needs to be reverse complement. We only need to match first ten bases to find adapters. These 10 bases have been checked against Maarj_AM_ database and no interference using short adapter sequence is found to catch false positives. 
+Nextera adapters R1 GTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG and R2 TGTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG needs to be reverse complement. We only need to match first ten bases to find adapters. These 10 bases have been checked against Maarj*AM* database and no interference using short adapter sequence is found to catch false positives. 
 
 Command help
 
@@ -125,7 +125,7 @@ arguments:
 
 ## 1.3 Correct strand of the sequences for Illumina
 
-Tagmentation based Illumina produces sequences that are not in the same direction, but USEARCH software needs to have all the reads in same direction as the reference database, we need to change them into correct strand. All the sequences should start from NS31 primer and end with AML2 primer. To achieve this, we use Maarj_AM_ database with our cleaned sequences and run BLAST+ software to identify strand of the sequences. Sequences identified as +/- by the BLAST+ needs to be reverse complemented. 
+Tagmentation based Illumina produces sequences that are not in the same direction, but USEARCH software needs to have all the reads in same direction as the reference database, we need to change them into correct strand. All the sequences should start from NS31 primer and end with AML2 primer. To achieve this, we use Maarj*AM* database with our cleaned sequences and run BLAST+ software to identify strand of the sequences. Sequences identified as +/- by the BLAST+ needs to be reverse complemented. 
 
 ```
 blastn -query illumina.cleaned.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db maarjam/maarjam -outfmt 5 | python pipeline_parse_blast.py > illumina.strand.blast
@@ -139,7 +139,7 @@ python pipeline_correct_direction.py -f illumina.cleaned.fasta -b illumina.stran
 
 ## 2. Remove chimeric sequences
 
-Once files are cleaned, we need to remove chimeric sequences that are introduced using PCR. We use USEARCH in reference database mode against Maarj_AM_ database. Make sure to use correct input file for 454 and Illumina, `454.cleaned.fasta` and `illumina.correct.fasta` respectivelly.
+Once files are cleaned, we need to remove chimeric sequences that are introduced using PCR. We use USEARCH in reference database mode against Maarj*AM* database. Make sure to use correct input file for 454 and Illumina, `454.cleaned.fasta` and `illumina.correct.fasta` respectivelly.
 
 ```
 usearch -uchime_ref 454.cleaned.fasta -db maarjam/maarjam.fasta -nonchimeras 454.cf.fasta -strand plus
@@ -148,7 +148,7 @@ usearch -uchime_ref illumina.correct.fasta -db maarjam/maarjam.fasta -nonchimera
 
 ## 3. Identify reads against reference database
 
-Once we have removed chimeric reads, we can start identifying sequences using BLAST+ software and Maarj_AM_ database. 
+Once we have removed chimeric reads, we can start identifying sequences using BLAST+ software and Maarj*AM* database. 
 
 ```
 blastn -query 454.cf.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db maarjam/maarjam -outfmt 5 | python pipeline_parse_blast.py > 454.cf.blast
@@ -157,7 +157,7 @@ blastn -query illumina.cf.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 
 
 ## 4. Summarize BLAST results
 
-Finally, we can summarize BLAST result using parsed output. Providing FASTA file will output also nohit selection that can be used for further BLAST against additional databases. We use parameters `-vs` and `-ve` do define reference database variable region location. Because we use Maarj_AM_ database in this example, all the referene sequences start after NS31 primer and variable region on the amplicon is located from 70nt to 300nt after the NS31 primer. We also define hit identity `-i` to be at least 97% and alignment length `-l` for the hit at least 95% to be counted as a hit.
+Finally, we can summarize BLAST result using parsed output. Providing FASTA file will output also nohit selection that can be used for further BLAST against additional databases. We use parameters `-vs` and `-ve` do define reference database variable region location. Because we use Maarj*AM* database in this example, all the referene sequences start after NS31 primer and variable region on the amplicon is located from 70nt to 300nt after the NS31 primer. We also define hit identity `-i` to be at least 97% and alignment length `-l` for the hit at least 95% to be counted as a hit.
 
 ```
 python pipeline_summarize_blast.py -f 454.cf.fasta -b 454.cf.blast -i 97 -l 95 -t 0 -vs 70 -ve 300
@@ -214,14 +214,17 @@ gunzip taxdump.tar.gz
 To run BLAST with all the INSDC data partitions together, we can simply define database parameter in BLAST as `nt` or if we want to run them separately, we need to define all the partions one by one or use for loop.
 
 ```
-blastn -query *.nohits.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db nt -outfmt 5 | python pipeline_parse_blast.py > nohits.blast
+blastn -query 454.cf.blast.i97.a95.nohits.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db nt -outfmt 5 | python pipeline_parse_blast.py > 454.nohits.blast
+blastn -query illumina.cf.blast.i97.a95.nohits.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db nt -outfmt 5 | python pipeline_parse_blast.py > illumina.nohits.blast
 ```
 
 or run separately and combine BLAST results together by selecting best hut for each sequence based on BLAST score (change number 41 accordinly to downloaded partitions)
 
 ```
-for i in {00..41}; do blastn -query *.nohits.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db nt.$i -outfmt 5 | python pipeline_parse_blast.py > nohits.$i.blast; done
-less nohits.*.blast | python pipeline_merge_blasts.py > nohits.blast
+for i in {00..41}; do blastn -query 454.cf.blast.i97.a95.nohits.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db nt.$i -outfmt 5 | python pipeline_parse_blast.py > 454.nohits.$i.blast; done
+less 454.nohits.*.blast | python pipeline_merge_blasts.py > 454.nohits.blast
+for i in {00..41}; do blastn -query illumina.cf.blast.i97.a95.nohits.fasta -evalue 1e-50 -max_target_seqs 1 -num_threads 4 -db nt.$i -outfmt 5 | python pipeline_parse_blast.py > illumina.nohits.$i.blast; done
+less illumina.nohits.*.blast | python pipeline_merge_blasts.py > illumina.nohits.blast
 ```
 
 ## 6.3 Summarize BLAST results
@@ -229,7 +232,8 @@ less nohits.*.blast | python pipeline_merge_blasts.py > nohits.blast
 We use relaxed parameters to filter potential hits by reducing identity threshold to be at least 90% and length at least 90%. We also need to define files, where taxonomy information is stored for `nt` database. Warning: as the `*.dmp` files are relatively large and below script is not optimized, it can use large ammount of memory and will take time to process file `gi_taxid_nucl.dmp`.
 
 ```
-python pipeline_summarize_gbblast.py -b nohits.blast -i 90 -l 90 -ti gi_taxid_nucl.dmp -tt names.dmp -tn nodes.dmp
+python pipeline_summarize_gbblast.py -b 454.nohits.blast -i 90 -l 90 -ti gi_taxid_nucl.dmp -tt names.dmp -tn nodes.dmp
+python pipeline_summarize_gbblast.py -b illumina.nohits.blast -i 90 -l 90 -ti gi_taxid_nucl.dmp -tt names.dmp -tn nodes.dmp
 ```
 
 Command help

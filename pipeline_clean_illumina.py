@@ -114,7 +114,7 @@ for f in files:
 						skip = False
 						if args.fadapter is not None and args.fadapter in c1[1]:
 							skip = True
-						if args.radapteris not None and args.radapter in c2[1]:
+						if args.radapter is not None and args.radapter in c2[1]:
 							skip = True
 						if skip == False:
 							seq_sel += 1

@@ -49,7 +49,7 @@ for line in sys.stdin:
 		if tag == "Hit_accession" and qry['hit']['id'] == "":
 			qry['hit']['id'] = value
 		if tag == "Hit_def":
-			qry['hit']['def'] = value
+			qry['hit']['def'] = value.split("&gt;")[0]
 		if tag == "Hit_len":
 			qry['hit']['len'] = value
 		if tag == "Hsp_num":
@@ -86,8 +86,6 @@ for line in sys.stdin:
 				sample = tmp[0]
 			else:
 				sample = "NA"
-			tmp = qry['hit']['def'].split(" ")
-			vtx = tmp[-1]
 			mlen = min(int(qry['qry-len']), int(qry['hit']['len']))
 			alen = float(qry['hit']['hsp']['alen']) / float(mlen) * 100
 			if alen > 100:

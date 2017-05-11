@@ -37,7 +37,7 @@ def reverse_complement(seq):
 lookup = {}
 for r in args.b:
 	col = r.strip().split("\t")
-	if col[8] is "+/-":
+	if col[8] in "+/-":
 		lookup[col[0]] = True
 """
 	Read FASTA file and reverse complement sequences with wrong strand
@@ -50,10 +50,11 @@ for r in args.f:
 	r = r.strip()
 	if r.startswith(">"):
 		if len(sequence) > 0:
-			if header in lookup:
+			if header[1:] in lookup:
 				sequence = reverse_complement(sequence)
 			sys.stdout.write("%s\n%s\n" % (header, sequence))
 		header = r
+		sequence = ""
 	else:
 		sequence += r
 

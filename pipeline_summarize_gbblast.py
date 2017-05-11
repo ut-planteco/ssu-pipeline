@@ -83,30 +83,46 @@ def buildTree(tax_id):
 		return taxonomy_tree[tax_id]
 
 console.log("Fetching list of GenBank IDs from BLAST\n")
+i = 0
 for f in args.b:
 	f = f.strip()
 	col = f.split("\t")
 	ids[col[1]] = True
+	i += 1
+	if i % 10000 == 0:
+		console.log("Processed %s IDs\r" % (i))
 
 console.log("Fetching conversion of GenBank IDs to nodes\n")
+i = 0
 for f in args.ti:
 	f = f.strip()
 	col = f.split("\t")
 	if col[0] in ids:
 		ids[col[0]] = col[1]
+	i += 1
+	if i % 100000 == 0:
+		console.log("Processed %s IDs\r" % (i))
 
 console.log("Building taxonomy tree lookup\n")
+i = 0
 for f in args.tn:
 	f = f.strip()
 	col = f.split("\t|\t")
 	nodes[col[0]] = col[1]
+	i += 1
+	if i % 100000 == 0:
+		console.log("Processed %s lookups\r" % (i))
 
 console.log("Building taxonomy name lookup\n")
+i = 0
 for f in args.tt:
 	f = f.replace("\t|\n", "\n").strip()
 	col = f.split("\t|\t")
 	if col[3] == "scientific name":
 		names[col[0]] = col[1]
+	i += 1
+	if i % 100000 == 0:
+		console.log("Processed %s names\r" % (i))
 
 i = 0
 console.log("Parsing BLAST\n")
