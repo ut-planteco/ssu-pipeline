@@ -262,7 +262,7 @@ ___
 
 Use following citation when using our python scripts:
 ```
-Vasar M, Andreson R, Davison J, Jairus T, Moora M, Remm M, Young JPW, Zobel M, Öpik M (XXXX) Increased sequencing depth does not increase captured diversity of arbuscular mycorrhizal fungi.
+Vasar, M., Andreson, R., Davison, J., Jairus, T., Moora, M., Remm, M., Young, J.P.W., Zobel, M. and Öpik, M., 2017. Increased sequencing depth does not increase captured diversity of arbuscular mycorrhizal fungi. Mycorrhiza, 27(8), pp.761-773.
 ```
 
 License: [CC-BY](https://creativecommons.org/licenses/by/3.0/)
